@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .todo-item { margin: 10px 0; display: flex; align-items: center; }
+        .todo-item input[type="checkbox"] { margin-right: 10px; }
+        .todo-item button { margin-left: auto; }
+    </style>
+</head>
+<body>
+<h1>TODO App</h1>
+<input type="text" id="todoInput" placeholder="Add a new task" />
+<button onclick="addTodo()">Add</button>
+<ul id="todoList"></ul>
+
+<script>
+    const API_URL = 'http://localhost:8080/api/todos';
+
+    // Fetch all todos
+    async function fetchTodos() {
+        const response = await fetch(API_URL);
+        const todos = await response.json();
+        renderTodos(todos);
+    }
+
+    // Render todos in the list
+    function renderTodos(todos) {
+        const todoList = document.getElementById('todoList');
+        todoList.innerHTML = '';
+        todos.forEach(todo => {
+            const li = document.createElement('li');
+            li.className = 'todo-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = todo.completed;
+            checkbox.onchange = () => toggleTodoCompletion(todo.id, checkbox.checked);
+
+            const text = document.createTextNode(todo.title);
+
+            const deleteButton = document.createElement('button');
+            deleteButton.textContent = 'Delete';
+            deleteButton.onclick = () => deleteTodoById(todo.id);
+
+            li.appendChild(checkbox);
+            li.appendChild(text);
+            li.appendChild(deleteButton);
+            todoList.appendChild(li);
+        });
+    }
+
+    // Add a new todo
+    async function addTodo() {
+        const input = document.getElementById('todoInput');
+        const title = input.value;
+        if (!title) return;
+
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, completed: false }),
+        });
+        input.value = '';
+        fetchTodos();
+    }
+
+    // Toggle completion status
+    async function toggleTodoCompletion(id, completed) {
+        await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ completed }),
+        });
+        fetchTodos();
+    }
+
+    // Delete a todo
+    async function deleteTodoById(id) {
+        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+        fetchTodos();
+    }
+
+    // Initialize the app
+    fetchTodos();
+</script>
+</body>
+</html>
